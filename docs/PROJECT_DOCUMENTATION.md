@@ -246,7 +246,7 @@ Each provider is configured under its own section (e.g., `Acmebot:AzureDns`, `Ac
 
 ### Infrastructure as Code (Bicep)
 
-Two deployment versions are supported in the `deploy/` directory:
+Two deployment versions are supported in the `deploy/` directory (recently changed, commercial support coming soon):
 
 | Version | Plan | Runtime | Status |
 |---|---|---|---|
