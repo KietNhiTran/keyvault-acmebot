@@ -7,22 +7,15 @@ using Amazon.Runtime;
 
 namespace Acmebot.App.Providers;
 
-public class Route53Provider : IDnsProvider
+public class Route53Provider(Route53Options options) : IDnsProvider
 {
-    public Route53Provider(Route53Options options)
-    {
-        var credentials = new BasicAWSCredentials(options.AccessKey, options.SecretKey);
-
-        _amazonRoute53Client = new AmazonRoute53Client(credentials, RegionEndpoint.GetBySystemName(options.Region));
-    }
-
-    private readonly AmazonRoute53Client _amazonRoute53Client;
+    private readonly AmazonRoute53Client _amazonRoute53Client = new(new BasicAWSCredentials(options.AccessKey, options.SecretKey), RegionEndpoint.GetBySystemName(options.Region));
 
     public string Name => "Amazon Route 53";
 
-    public int PropagationSeconds => 10;
+    public TimeSpan PropagationDelay => TimeSpan.FromSeconds(10);
 
-    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync()
+    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync(CancellationToken cancellationToken = default)
     {
         var zones = new List<HostedZone>();
 
@@ -30,10 +23,7 @@ public class Route53Provider : IDnsProvider
 
         do
         {
-            response = await _amazonRoute53Client.ListHostedZonesAsync(new ListHostedZonesRequest
-            {
-                Marker = response?.NextMarker
-            });
+            response = await _amazonRoute53Client.ListHostedZonesAsync(new ListHostedZonesRequest { Marker = response?.NextMarker }, cancellationToken);
 
             zones.AddRange(response.HostedZones);
 
@@ -42,7 +32,7 @@ public class Route53Provider : IDnsProvider
         return zones.Select(x => new DnsZone(this) { Id = x.Id, Name = x.Name.TrimEnd('.') }).ToArray();
     }
 
-    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values)
+    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
         var recordName = $"{relativeRecordName}.{zone.Name}.";
 
@@ -60,10 +50,10 @@ public class Route53Provider : IDnsProvider
 
         var request = new ChangeResourceRecordSetsRequest(zone.Id, new ChangeBatch([change]));
 
-        return _amazonRoute53Client.ChangeResourceRecordSetsAsync(request);
+        return _amazonRoute53Client.ChangeResourceRecordSetsAsync(request, cancellationToken);
     }
 
-    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName)
+    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
         var recordName = $"{relativeRecordName}.{zone.Name}.";
 
@@ -73,7 +63,7 @@ public class Route53Provider : IDnsProvider
             StartRecordType = RRType.TXT
         };
 
-        var listResponse = await _amazonRoute53Client.ListResourceRecordSetsAsync(listRequest);
+        var listResponse = await _amazonRoute53Client.ListResourceRecordSetsAsync(listRequest, cancellationToken);
 
         var changes = listResponse.ResourceRecordSets
                                   .Where(x => x.Name == recordName && x.Type == RRType.TXT)
@@ -87,6 +77,6 @@ public class Route53Provider : IDnsProvider
 
         var request = new ChangeResourceRecordSetsRequest(zone.Id, new ChangeBatch(changes));
 
-        await _amazonRoute53Client.ChangeResourceRecordSetsAsync(request);
+        await _amazonRoute53Client.ChangeResourceRecordSetsAsync(request, cancellationToken);
     }
 }

@@ -10,26 +10,22 @@ using Google.Apis.Services;
 
 namespace Acmebot.App.Providers;
 
-public class GoogleDnsProvider : IDnsProvider
+public class GoogleDnsProvider(GoogleDnsOptions options) : IDnsProvider
 {
-    public GoogleDnsProvider(GoogleDnsOptions options)
+    private readonly DnsService _dnsService = new(new BaseClientService.Initializer
     {
-        var jsonString = Encoding.UTF8.GetString(Convert.FromBase64String(options.KeyFile64));
-        var credential = CredentialFactory.FromJson<GoogleCredential>(jsonString).CreateScoped(DnsService.Scope.NdevClouddnsReadwrite);
+        HttpClientInitializer = CredentialFactory.FromJson<GoogleCredential>(Encoding.UTF8.GetString(Convert.FromBase64String(options.KeyFile64)))
+                                                 .CreateScoped(DnsService.Scope.NdevClouddnsReadwrite)
+    });
 
-        // Create the service.
-        _dnsService = new DnsService(new BaseClientService.Initializer { HttpClientInitializer = credential });
-        _credsParameters = NewtonsoftJsonSerializer.Instance.Deserialize<JsonCredentialParameters>(jsonString);
-    }
-
-    private readonly DnsService _dnsService;
-    private readonly JsonCredentialParameters _credsParameters;
+    private readonly JsonCredentialParameters _credsParameters =
+        NewtonsoftJsonSerializer.Instance.Deserialize<JsonCredentialParameters>(Encoding.UTF8.GetString(Convert.FromBase64String(options.KeyFile64)));
 
     public string Name => "Google Cloud DNS";
 
-    public int PropagationSeconds => 60;
+    public TimeSpan PropagationDelay => TimeSpan.FromSeconds(60);
 
-    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync()
+    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync(CancellationToken cancellationToken = default)
     {
         var zones = new List<ManagedZone>();
 
@@ -41,17 +37,17 @@ public class GoogleDnsProvider : IDnsProvider
 
             request.PageToken = response?.NextPageToken;
 
-            response = await request.ExecuteAsync();
+            response = await request.ExecuteAsync(cancellationToken);
 
-            zones.AddRange(response.ManagedZones);
+            zones.AddRange(response.ManagedZones ?? []);
 
         } while (!string.IsNullOrEmpty(response.NextPageToken));
 
-        return zones.Select(x => new DnsZone(this) { Id = x.Name, Name = x.DnsName.TrimEnd('.'), NameServers = x.NameServers.ToArray() })
+        return zones.Select(x => new DnsZone(this) { Id = x.Name, Name = x.DnsName.TrimEnd('.'), NameServers = x.NameServers?.ToArray() ?? [] })
                     .ToArray();
     }
 
-    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values)
+    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
         var recordName = $"{relativeRecordName}.{zone.Name}.";
 
@@ -64,15 +60,15 @@ public class GoogleDnsProvider : IDnsProvider
                     Name = recordName,
                     Type = "TXT",
                     Ttl = 60,
-                    Rrdatas = values.ToArray()
+                    Rrdatas = values
                 }
             ]
         };
 
-        return _dnsService.Changes.Create(change, _credsParameters.ProjectId, zone.Id).ExecuteAsync();
+        return _dnsService.Changes.Create(change, _credsParameters.ProjectId, zone.Id).ExecuteAsync(cancellationToken);
     }
 
-    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName)
+    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
         var recordName = $"{relativeRecordName}.{zone.Name}.";
 
@@ -81,15 +77,15 @@ public class GoogleDnsProvider : IDnsProvider
         request.Name = recordName;
         request.Type = "TXT";
 
-        var txtRecords = await request.ExecuteAsync();
+        var txtRecords = await request.ExecuteAsync(cancellationToken);
 
-        if (txtRecords.Rrsets.Count == 0)
+        if (txtRecords.Rrsets is null or { Count: 0 })
         {
             return;
         }
 
         var change = new Change { Deletions = txtRecords.Rrsets };
 
-        await _dnsService.Changes.Create(change, _credsParameters.ProjectId, zone.Id).ExecuteAsync();
+        await _dnsService.Changes.Create(change, _credsParameters.ProjectId, zone.Id).ExecuteAsync(cancellationToken);
     }
 }

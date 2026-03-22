@@ -1,46 +1,56 @@
 ﻿using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
-using Acmebot.App.Extensions;
 using Acmebot.App.Options;
 
 namespace Acmebot.App.Providers;
 
 public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
 {
-    private readonly GoDaddyClient _client = new(options.ApiKey, options.ApiSecret);
+    private readonly GoDaddyClient _goDaddyClient = new(options.ApiKey, options.ApiSecret);
 
     public string Name => "GoDaddy";
 
-    public int PropagationSeconds => 600;
+    public TimeSpan PropagationDelay => TimeSpan.FromSeconds(600);
 
-    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync()
+    public async Task<IReadOnlyList<DnsZone>> ListZonesAsync(CancellationToken cancellationToken = default)
     {
-        var zones = await _client.ListZonesAsync();
+        var zones = new List<DnsZone>();
 
-        return zones.Select(x => new DnsZone(this) { Id = x.DomainId, Name = x.Domain, NameServers = x.NameServers }).ToArray();
+        await foreach (var domain in _goDaddyClient.ListDomainsAsync(cancellationToken))
+        {
+            zones.Add(new DnsZone(this) { Id = domain.DomainId, Name = domain.Domain, NameServers = domain.NameServers ?? [] });
+        }
+
+        return zones;
     }
 
-    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, IEnumerable<string> values)
+    public Task CreateTxtRecordAsync(DnsZone zone, string relativeRecordName, string[] values, CancellationToken cancellationToken = default)
     {
-        var entries = values.Select(x => new DnsEntry { Name = relativeRecordName, Type = "TXT", TTL = 600, Data = x }).ToArray();
+        var entries = values.Select(x => new DnsEntry { Name = relativeRecordName, Type = "TXT", Ttl = 600, Data = x }).ToArray();
 
-        return _client.AddRecordAsync(zone.Name, entries);
+        return _goDaddyClient.CreateRecordAsync(zone.Name, entries, cancellationToken);
     }
 
-    public Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName)
+    public async Task DeleteTxtRecordAsync(DnsZone zone, string relativeRecordName, CancellationToken cancellationToken = default)
     {
-        return _client.DeleteRecordAsync(zone.Name, "TXT", relativeRecordName);
+        try
+        {
+            await _goDaddyClient.DeleteRecordAsync(zone.Name, "TXT", relativeRecordName, cancellationToken);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            // ignored
+        }
     }
 
     private class GoDaddyClient
     {
         public GoDaddyClient(string apiKey, string apiSecret)
         {
-            ArgumentNullException.ThrowIfNull(apiKey);
-            ArgumentNullException.ThrowIfNull(apiSecret);
-
             _httpClient = new HttpClient
             {
                 BaseAddress = new Uri("https://api.godaddy.com/v1/")
@@ -52,65 +62,56 @@ public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
 
         private readonly HttpClient _httpClient;
 
-        public async Task<IReadOnlyList<ZoneDomain>> ListZonesAsync()
+        public async IAsyncEnumerable<ZoneDomain> ListDomainsAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            const int limit = 100;
-
             var marker = "";
-            var allActiveDomains = new List<ZoneDomain>();
 
             while (true)
             {
-                var response = await _httpClient.GetAsync($"domains?statuses=ACTIVE&includes=nameServers&limit={limit}{marker}");
+                var domains = await _httpClient.GetFromJsonAsync<ZoneDomain[]>($"domains?statuses=ACTIVE&includes=nameServers&limit=1000&marker={marker}", cancellationToken);
 
-                response.EnsureSuccessStatusCode();
-
-                var domains = await response.Content.ReadAsAsync<ZoneDomain[]>();
-
-                if (domains.Length == 0)
+                if (domains is null or { Length: 0 })
                 {
                     break;
                 }
 
-                allActiveDomains.AddRange(domains);
+                foreach (var domain in domains)
+                {
+                    yield return domain;
+                }
 
-                marker = $"&marker={domains[^1].Domain}";
-            }
-
-            return allActiveDomains;
-        }
-
-        public async Task DeleteRecordAsync(string domain, string type, string name)
-        {
-            var response = await _httpClient.DeleteAsync($"domains/{domain}/records/{type}/{name}");
-
-            if (response.StatusCode != HttpStatusCode.NotFound)
-            {
-                response.EnsureSuccessStatusCode();
+                marker = domains[^1].Domain;
             }
         }
 
-        public async Task AddRecordAsync(string domain, IReadOnlyList<DnsEntry> entries)
+        public async Task DeleteRecordAsync(string domain, string type, string recordName, CancellationToken cancellationToken = default)
         {
-            var response = await _httpClient.PatchAsync($"domains/{domain}/records", entries);
+            var response = await _httpClient.DeleteAsync($"domains/{domain}/records/{type}/{recordName}", cancellationToken);
+
+            response.EnsureSuccessStatusCode();
+        }
+
+        public async Task CreateRecordAsync(string domain, IReadOnlyList<DnsEntry> entries, CancellationToken cancellationToken = default)
+        {
+            var response = await _httpClient.PatchAsJsonAsync($"domains/{domain}/records", entries, cancellationToken);
 
             response.EnsureSuccessStatusCode();
         }
     }
 
-    private class ZoneDomain
+    internal class ZoneDomain
     {
         [JsonPropertyName("domain")]
-        public string? Domain { get; set; }
+        public required string Domain { get; set; }
 
         [JsonPropertyName("domainId")]
-        public string? DomainId { get; set; }
+        public required string DomainId { get; set; }
 
         [JsonPropertyName("nameServers")]
         public string[]? NameServers { get; set; }
     }
 
-    private class DnsEntry
+    internal class DnsEntry
     {
         [JsonPropertyName("data")]
         public string? Data { get; set; }
@@ -120,7 +121,7 @@ public class GoDaddyProvider(GoDaddyOptions options) : IDnsProvider
 
         // ReSharper disable once InconsistentNaming
         [JsonPropertyName("ttl")]
-        public int TTL { get; set; }
+        public int Ttl { get; set; }
 
         [JsonPropertyName("type")]
         public string? Type { get; set; }
