@@ -1,0 +1,274 @@
+{
+  "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Resources/deployments/Microsoft.Template-20260317145114",
+  "name": "Microsoft.Template-20260317145114",
+  "type": "Microsoft.Resources/deployments",
+  "properties": {
+    "templateLink": {
+      "uri": "https://raw.githubusercontent.com/polymind-inc/acmebot/master/deploy/azuredeploy.json",
+      "contentVersion": "1.0.0.0"
+    },
+    "templateHash": "7664189418855377656",
+    "parameters": {
+      "appNamePrefix": {
+        "type": "String",
+        "value": "edg"
+      },
+      "location": {
+        "type": "String",
+        "value": "australiaeast"
+      },
+      "mailAddress": {
+        "type": "String",
+        "value": "nhitran@microsoft.com"
+      },
+      "acmeEndpoint": {
+        "type": "String",
+        "value": "https://acme-v02.api.letsencrypt.org/directory"
+      },
+      "createWithKeyVault": {
+        "type": "Bool",
+        "value": true
+      },
+      "keyVaultSkuName": {
+        "type": "String",
+        "value": "standard"
+      },
+      "keyVaultBaseUrl": {
+        "type": "String",
+        "value": ""
+      },
+      "additionalAppSettings": {
+        "type": "Array",
+        "value": []
+      }
+    },
+    "mode": "Incremental",
+    "debugSetting": {
+      "detailLevel": "None"
+    },
+    "provisioningState": "Failed",
+    "timestamp": "2026-03-17T03:52:34.9864971Z",
+    "duration": "PT1M14.0691504S",
+    "correlationId": "6de8a2a7-2085-4437-9287-027b5b09912a",
+    "providers": [
+      {
+        "namespace": "Microsoft.Storage",
+        "resourceTypes": [
+          {
+            "resourceType": "storageAccounts/blobServices/containers",
+            "locations": [
+              null
+            ]
+          },
+          {
+            "resourceType": "storageAccounts/blobServices",
+            "locations": [
+              null
+            ]
+          },
+          {
+            "resourceType": "storageAccounts",
+            "locations": [
+              "australiaeast"
+            ]
+          }
+        ]
+      },
+      {
+        "namespace": "Microsoft.OperationalInsights",
+        "resourceTypes": [
+          {
+            "resourceType": "workspaces",
+            "locations": [
+              "australiaeast"
+            ]
+          }
+        ]
+      },
+      {
+        "namespace": "Microsoft.Insights",
+        "resourceTypes": [
+          {
+            "resourceType": "components",
+            "locations": [
+              "australiaeast"
+            ]
+          }
+        ]
+      },
+      {
+        "namespace": "Microsoft.Web",
+        "resourceTypes": [
+          {
+            "resourceType": "serverfarms",
+            "locations": [
+              "australiaeast"
+            ]
+          },
+          {
+            "resourceType": "sites",
+            "locations": [
+              "australiaeast"
+            ]
+          },
+          {
+            "resourceType": "sites/extensions",
+            "locations": [
+              null
+            ]
+          }
+        ]
+      },
+      {
+        "namespace": "Microsoft.KeyVault",
+        "resourceTypes": [
+          {
+            "resourceType": "vaults",
+            "locations": [
+              "australiaeast"
+            ]
+          }
+        ]
+      },
+      {
+        "namespace": "Microsoft.Authorization",
+        "resourceTypes": [
+          {
+            "resourceType": "roleAssignments",
+            "locations": [
+              null
+            ]
+          }
+        ]
+      }
+    ],
+    "dependencies": [
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Storage/storageAccounts/stb7mujvm3dewryfunc/blobServices/default",
+            "resourceType": "Microsoft.Storage/storageAccounts/blobServices",
+            "resourceName": "stb7mujvm3dewryfunc/default"
+          }
+        ],
+        "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Storage/storageAccounts/stb7mujvm3dewryfunc/blobServices/default/containers/app-package-edg-b7mujvm",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices/containers",
+        "resourceName": "stb7mujvm3dewryfunc/default/app-package-edg-b7mujvm"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Storage/storageAccounts/stb7mujvm3dewryfunc",
+            "resourceType": "Microsoft.Storage/storageAccounts",
+            "resourceName": "stb7mujvm3dewryfunc"
+          }
+        ],
+        "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Storage/storageAccounts/stb7mujvm3dewryfunc/blobServices/default",
+        "resourceType": "Microsoft.Storage/storageAccounts/blobServices",
+        "resourceName": "stb7mujvm3dewryfunc/default"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.OperationalInsights/workspaces/log-edg-b7mu",
+            "resourceType": "Microsoft.OperationalInsights/workspaces",
+            "resourceName": "log-edg-b7mu"
+          }
+        ],
+        "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Insights/components/appi-edg-b7mu",
+        "resourceType": "Microsoft.Insights/components",
+        "resourceName": "appi-edg-b7mu"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Insights/components/appi-edg-b7mu",
+            "resourceType": "Microsoft.Insights/components",
+            "resourceName": "appi-edg-b7mu"
+          },
+          {
+            "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Web/serverfarms/plan-edg-b7mu",
+            "resourceType": "Microsoft.Web/serverfarms",
+            "resourceName": "plan-edg-b7mu"
+          },
+          {
+            "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Storage/storageAccounts/stb7mujvm3dewryfunc",
+            "resourceType": "Microsoft.Storage/storageAccounts",
+            "resourceName": "stb7mujvm3dewryfunc"
+          },
+          {
+            "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Storage/storageAccounts/stb7mujvm3dewryfunc",
+            "resourceType": "Microsoft.Storage/storageAccounts",
+            "resourceName": "stb7mujvm3dewryfunc",
+            "apiVersion": "2025-06-01"
+          },
+          {
+            "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Insights/components/appi-edg-b7mu",
+            "resourceType": "Microsoft.Insights/components",
+            "resourceName": "appi-edg-b7mu",
+            "apiVersion": "2020-02-02"
+          },
+          {
+            "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Storage/storageAccounts/stb7mujvm3dewryfunc",
+            "resourceType": "Microsoft.Storage/storageAccounts",
+            "resourceName": "stb7mujvm3dewryfunc",
+            "actionName": "listKeys",
+            "apiVersion": "2025-06-01"
+          }
+        ],
+        "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Web/sites/func-edg-b7mu",
+        "resourceType": "Microsoft.Web/sites",
+        "resourceName": "func-edg-b7mu"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Web/sites/func-edg-b7mu",
+            "resourceType": "Microsoft.Web/sites",
+            "resourceName": "func-edg-b7mu"
+          }
+        ],
+        "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Web/sites/func-edg-b7mu/extensions/onedeploy",
+        "resourceType": "Microsoft.Web/sites/extensions",
+        "resourceName": "func-edg-b7mu/onedeploy"
+      },
+      {
+        "dependsOn": [
+          {
+            "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Web/sites/func-edg-b7mu",
+            "resourceType": "Microsoft.Web/sites",
+            "resourceName": "func-edg-b7mu"
+          },
+          {
+            "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.KeyVault/vaults/kv-edg-b7mu",
+            "resourceType": "Microsoft.KeyVault/vaults",
+            "resourceName": "kv-edg-b7mu"
+          },
+          {
+            "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Web/sites/func-edg-b7mu",
+            "resourceType": "Microsoft.Web/sites",
+            "resourceName": "func-edg-b7mu",
+            "apiVersion": "2025-03-01"
+          }
+        ],
+        "id": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.KeyVault/vaults/kv-edg-b7mu/providers/Microsoft.Authorization/roleAssignments/412febd2-a200-5d94-994c-e9497b3daf95",
+        "resourceType": "Microsoft.Authorization/roleAssignments",
+        "resourceName": "412febd2-a200-5d94-994c-e9497b3daf95"
+      }
+    ],
+    "error": {
+      "code": "DeploymentFailed",
+      "target": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Resources/deployments/Microsoft.Template-20260317145114",
+      "message": "At least one resource deployment operation failed. Please list deployment operations for details. Please see https://aka.ms/arm-deployment-operations for usage details.",
+      "details": [
+        {
+          "target": "/subscriptions/1e587183-49d6-41cc-93fd-a8f2fbdb0cfb/resourceGroups/acmebot-rg/providers/Microsoft.Web/sites/func-edg-b7mu/extensions/onedeploy"
+        }
+      ]
+    },
+    "validationLevel": "Template"
+  },
+  "tags": {
+    "marketplaceItemId": "Microsoft.Template"
+  }
+}
